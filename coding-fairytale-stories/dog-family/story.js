@@ -224,8 +224,9 @@ const STORY = {
     { id: "snack", type: "minigame", game: "write", bg: "bgSnow", bgm: PLAY,
       word: "바나나", writeIndex: 1,
       char: "dogDudu", charMood: "sad",
+      /* 배는 오른쪽 아래로 — 위에 두면 자막 띠에 가린다 */
       props: [ { art: "banana", x: "4%", y: "60%", size: 120 },
-               { art: "boat", x: "76%", y: "12%", size: 130 } ],
+               { art: "boat", x: "84%", y: "62%", size: 120 } ],
       narration: "두두가 배가 고파요. 모모가 바나나 가지고 와요. 여기 나 하고 써 주세요!",
       doneSay: "우와, 바나나예요! 두두가 고마워요!",
       parentPrompt: "아이에게: '바나나'를 손가락으로 같이 짚어볼까요? 가운데 글자가 무엇이지요?",
