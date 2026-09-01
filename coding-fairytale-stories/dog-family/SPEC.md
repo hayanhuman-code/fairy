@@ -158,6 +158,10 @@
   "GitHub Actions"로 바꿔 줘야 한다(자동 토큰에 Pages 생성 권한이 없어 실패함 —
   로그로 확인: `Create Pages site failed. Resource not accessible by integration`).
   저장소 루트에 이야기를 고르는 첫 화면(`index.html`)을 두었다.
+  → 2026-09-01 사용자가 Source를 "GitHub Actions"로 바꿔 켬. 그 뒤로는 푸시할 때마다
+  자동 배포된다. 다만 **Claude 쪽 토큰으로는 워크플로를 수동 실행(dispatch)도
+  재실행(rerun)도 할 수 없다(둘 다 403)** — 배포를 다시 돌리려면 푸시하거나
+  사람이 Actions 화면에서 Run workflow 를 눌러야 한다.
 
 ### 다음에 참고할 점 (잘 안 된 것 포함)
 - **받침 없는 글쓰기가 이 동화에서 제일 어려웠다.** 못 쓴 말: 마당·하늘·구름·별·달·
