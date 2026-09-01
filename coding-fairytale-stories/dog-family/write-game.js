@@ -4,8 +4,13 @@
    동화 엔진 위에 이식했다. engine.js는 수정하지 않는다: 이 파일이 engine.js
    뒤에 로드되어 전역 renderMinigame 만 감싸고, 나머지 게임은 원본에 넘긴다.
 
+   ★ 이 동화의 본체는 이야기다. 쓰기는 이야기를 멈춰 세우는 과제가 아니라
+     잠깐 흥미를 끄는 한 순간이어야 한다. 그래서 낱말 전체를 쓰게 하지 않고
+     writeIndex 로 한 글자만 쓰게 한다(나머지 글자는 이미 채워진 채로 보인다).
+     빗나가도 세 번이면 대신 그려 주고 넘어간다.
+
    장면 형식:
-   { type:"minigame", game:"write", word:"바나나", bg, bgm,
+   { type:"minigame", game:"write", word:"바나나", writeIndex:1, bg, bgm,
      char:"dogDudu", charMood:"sad",         // 곁에 서 있는 캐릭터 (다 쓰면 happy)
      narration:"...", doneSay:"...", next:"..." }
    ===================================================================== */
@@ -24,14 +29,16 @@
     START: 2.2     // 시작점 허용 거리 (획 굵기 배수)
   };
   const MISS_HINT = 2;   // 이만큼 빗나가면 그 획을 잠깐 비춰 줌
-  const MISS_AUTO = 4;   // 이만큼 빗나가면 대신 그려 주고 진행 (무실패)
+  const MISS_AUTO = 3;   // 이만큼 빗나가면 대신 그려 주고 진행 (무실패)
 
   /* ---------- 스타일 주입 (index.html 무수정) ---------- */
   const css = `
-  .wgWrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:3vw; padding:90px 16px 16px; }
+  .wgWrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:4vw; padding:90px 16px 16px; }
+  /* 글씨 칸이 화면을 다 먹으면 이야기 장면이 아니라 학습지가 된다.
+     배경·소품·캐릭터가 함께 보이도록 칸은 화면의 3분의 1쯤으로 둔다. */
   .wgCard { position:relative; background:#FFFDF8; border:3px solid #f0d9c2; border-radius:28px;
             box-shadow:0 6px 0 rgba(90,74,56,.12), 0 12px 24px rgba(90,74,56,.08);
-            width:min(52vw, 58vh, 430px); aspect-ratio:1; }
+            width:min(38vw, 46vh, 320px); aspect-ratio:1; }
   .wgCard svg, .wgCard canvas { position:absolute; inset:10px; width:calc(100% - 20px); height:calc(100% - 20px); }
   #wgGuide { z-index:1; transition:opacity .25s; } #wgGuide.dimmed { opacity:.18; }
   #wgCanvas { z-index:2; touch-action:none; }
@@ -191,6 +198,10 @@
     if (!item) { console.warn('[write] 조립 불가:', scene.word); return; }
     const glyphs = item.parts || [item];
     const INK = scene.inkColor || "#A9640A";        // hangulssugi 단어 카테고리의 딥 컬러
+    // 아이가 실제로 쓰는 글자. 지정이 없으면 전부 쓴다.
+    const targets = (scene.writeIndex != null)
+      ? [Math.max(0, Math.min(glyphs.length - 1, scene.writeIndex))]
+      : glyphs.map((_, i) => i);
 
     puzzleEl.style.display = "flex";
     const ch = scene.char || "dogDudu";
@@ -204,7 +215,7 @@
          <div class="wgSide">
            <div class="wgChips">${glyphs.map((g, i) =>
              `<div class="wgChip" data-gi="${i}">${g.id}</div>`).join("")}</div>
-           <div class="wolfSpot" id="wgChar" style="position:static">${charHTML(ch, 150, scene.charMood || "sad")}</div>
+           <div class="wolfSpot" id="wgChar" style="position:static">${charHTML(ch, 175, scene.charMood || "sad")}</div>
          </div>
        </div>`;
     trayEl.innerHTML =
@@ -217,7 +228,8 @@
     const ctx = canvas.getContext('2d');
 
     /* 상태 */
-    let gi = 0;              // 지금 쓰는 음절
+    let ti = 0;              // targets 안에서 몇 번째를 쓰는 중인지
+    let gi = targets[0];     // 지금 쓰는 음절 (glyphs 인덱스)
     let traceIndex = 0;      // 지금 그을 획
     let miss = 0;            // 이 획에서 빗나간 횟수
     let strokes = [];        // 이 음절에서 받아들인(+진행 중) 획
@@ -295,11 +307,14 @@
       label.textContent = traceIndex + 1;
       guide.appendChild(label);
     }
+    // 아이가 쓰지 않는 글자는 처음부터 채워진 채로 보여 준다 — 낱말은 눈에
+    // 다 들어오되, 손으로 쓸 것은 딱 한 글자라는 게 한눈에 보이게.
     function renderChips() {
       puzzleSceneEl.querySelectorAll('.wgChip').forEach(c => {
         const i = +c.dataset.gi;
-        c.classList.toggle('done', i < gi);
-        c.classList.toggle('now', i === gi);
+        const isTarget = targets.indexOf(i) >= 0;
+        c.classList.toggle('now', isTarget && i === gi);
+        c.classList.toggle('done', !isTarget || targets.indexOf(i) < ti);
       });
     }
 
@@ -404,16 +419,17 @@
     function glyphDone() {
       renderGuide();       // 전 획이 옅게 채워진 완성 모양
       Audio2.sfx("good");
-      gi++;
+      ti++;
       renderChips();
-      if (gi >= glyphs.length) { allDone(); return; }
+      if (ti >= targets.length) { allDone(); return; }
+      gi = targets[ti];
       later(() => startGlyph(false), 800);
     }
     function allDone() {
       unbind();
       Audio2.sfx("fanfare");
       const charBox = document.getElementById('wgChar');
-      if (charBox) charBox.innerHTML = charHTML(ch, 150, "happy");
+      if (charBox) charBox.innerHTML = charHTML(ch, 175, "happy");
       const msg = scene.doneSay || "우와! 다 써서 고마워요!";
       showDoneBar(msg, scene.next);
       speakThenAdvance(token, msg, scene.next, 1600);
@@ -470,6 +486,25 @@
     if (scene.game === "write") return renderWrite(scene);
     return origRenderMinigame(scene);
   };
+
+  /* ---------- 엔진 버튼 글씨를 받침 없는 말로 ----------
+     engine.js 가 "다음 ▶", "다시 처음 ↺", "다른 선택 해보기 ↗" 를 장면마다 다시
+     써 넣는다. 자막은 다 받침이 없는데 아이 손이 제일 자주 가는 버튼에만 받침이
+     남으면 규칙이 깨진다. 엔진을 고치는 대신 글자가 바뀔 때마다 갈아 끼운다. */
+  const BTN_WORDS = {
+    "다음 ▶": "가자 ▶",
+    "다시 처음 ↺": "다시 하자 ↺",
+    "다른 선택 해보기 ↗": "다르게 가 보자 ↗"
+  };
+  function relabel() {
+    ["nextBtn", "altBtn"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && BTN_WORDS[el.textContent]) el.textContent = BTN_WORDS[el.textContent];
+    });
+  }
+  relabel();
+  new MutationObserver(relabel)
+    .observe(document.body, { childList: true, subtree: true, characterData: true });
 
   /* ---------- 이야기 전용 그림 설치 ----------
      story.js는 engine.js보다 먼저 로드되어 ART에 직접 못 넣는다.

@@ -68,6 +68,20 @@ if (m) {
   console.warn('경고: write-game.js에서 WG_LABELS를 찾지 못함');
 }
 
+/* 엔진 버튼을 갈아 끼우는 말(BTN_WORDS의 오른쪽 값) — 실제로 화면에 남는 글자 */
+const bw = wg.match(/BTN_WORDS\s*=\s*\{([\s\S]*?)\}/);
+if (bw) {
+  const pairs = bw[1].match(/"[^"]*"\s*:\s*"([^"]*)"/g) || [];
+  pairs.forEach(p => check('write-game.BTN_WORDS(바꾼 뒤)', p.split(':').pop().trim().slice(1, -1)));
+} else {
+  console.warn('경고: write-game.js에서 BTN_WORDS를 찾지 못함');
+}
+
+/* index.html에서 아이가 보는 버튼 글자 */
+const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+const sb = html.match(/<button id="startBtn">([^<]*)<\/button>/);
+if (sb) check('index.html startBtn', sb[1]);
+
 /* 결과 */
 if (problems.length) {
   console.log(`❌ 받침 발견 — ${problems.length}곳 (검사 ${checked}개 문자열)`);
