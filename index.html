@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>우리 아기 이야기</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='55' r='34' fill='%23eec871'/%3E%3Cellipse cx='18' cy='56' rx='11' ry='21' fill='%23d9a94e'/%3E%3Cellipse cx='82' cy='56' rx='11' ry='21' fill='%23d9a94e'/%3E%3Cellipse cx='50' cy='68' rx='17' ry='13' fill='%23fdf6e3'/%3E%3Cellipse cx='50' cy='61' rx='6' ry='4' fill='%235a4636'/%3E%3Ccircle cx='39' cy='49' r='4.5' fill='%235b4636'/%3E%3Ccircle cx='61' cy='49' r='4.5' fill='%235b4636'/%3E%3C/svg%3E" />
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh; padding: 40px 20px 32px;
+    font-family: "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    background: #fdf6ef; color: #5b4636;
+    display: flex; flex-direction: column; align-items: center; gap: 32px;
+  }
+  h1 { margin: 0; font-size: clamp(30px, 6vw, 46px); color: #7a5a40; letter-spacing: -.01em; }
+  .grid { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; width: 100%; max-width: 860px; }
+  .card {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    width: min(88vw, 320px); padding: 26px 22px 24px; text-decoration: none; color: inherit;
+    background: #fff; border: 4px solid #f0d9c2; border-radius: 32px;
+    box-shadow: 0 6px 0 rgba(90,74,56,.14), 0 14px 28px rgba(90,74,56,.10);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .card:active { transform: translateY(5px); box-shadow: 0 1px 0 rgba(90,74,56,.14), 0 6px 14px rgba(90,74,56,.10); }
+  .card svg { width: 150px; height: auto; }
+  .name { font-size: 30px; font-weight: 900; color: #7a5a40; }
+  .sub  { font-size: 19px; font-weight: 700; color: #a98d70; }
+  .go {
+    margin-top: 4px; padding: 12px 30px; border-radius: 40px;
+    background: #f6a96b; color: #fff; font-size: 24px; font-weight: 900;
+    box-shadow: 0 4px 0 #d98643;
+  }
+  .note { max-width: 520px; text-align: center; font-size: 15px; line-height: 1.6; color: #a98d70; }
+</style>
+</head>
+<body>
+  <h1>우리 아기 이야기</h1>
+
+  <div class="grid">
+    <a class="card" href="coding-fairytale-stories/dog-family/index.html">
+      <svg viewBox="0 0 140 150" aria-hidden="true">
+        <defs><radialGradient id="b" cx="48%" cy="32%" r="72%"><stop offset="0" stop-color="#fbe9b7"/><stop offset="1" stop-color="#eec871"/></radialGradient></defs>
+        <ellipse cx="70" cy="140" rx="44" ry="9" fill="#000" opacity=".07"/>
+        <ellipse cx="70" cy="106" rx="42" ry="36" fill="url(#b)"/>
+        <circle cx="70" cy="72" r="38" fill="url(#b)"/>
+        <ellipse cx="34" cy="74" rx="14" ry="27" fill="#d9a94e"/><ellipse cx="106" cy="74" rx="14" ry="27" fill="#d9a94e"/>
+        <ellipse cx="70" cy="88" rx="20" ry="15" fill="#fdf6e3"/>
+        <ellipse cx="70" cy="80" rx="7" ry="5" fill="#5a4636"/>
+        <circle cx="57" cy="68" r="5.2" fill="#5b4636"/><circle cx="83" cy="68" r="5.2" fill="#5b4636"/>
+        <circle cx="59" cy="66" r="1.7" fill="#fff"/><circle cx="85" cy="66" r="1.7" fill="#fff"/>
+        <path d="M61 88 Q70 98 79 88" stroke="#7a5a3a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M70 92 Q70 99 65 100" stroke="#e8837a" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="48" cy="80" r="6" fill="#f0a06a" opacity=".55"/><circle cx="92" cy="80" r="6" fill="#f0a06a" opacity=".55"/>
+        <path d="M56 38 L70 30 L84 38 L70 46 Z" fill="#f6a5bd" opacity=".9"/><circle cx="70" cy="38" r="4" fill="#e98ba0"/>
+      </svg>
+      <div class="name">보리와 두두</div>
+      <div class="sub">우리 배 타고 가자</div>
+      <div class="go">가자 ▶</div>
+    </a>
+  </div>
+
+  <p class="note">
+    받침 없는 글자로만 쓴 이야기예요. 소리가 나오니 볼륨을 확인해 주세요.<br>
+    부모님과 함께 보면 더 좋아요 💛
+  </p>
+</body>
+</html>

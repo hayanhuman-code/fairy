@@ -1,0 +1,40 @@
+# 코딩 동화를 GitHub Pages로 배포한다. 빌드 도구가 없는 정적 파일이라 저장소를 그대로 올린다.
+#
+# 최초 1회 저장소 Settings > Pages > Source 를 "GitHub Actions"로 바꿔야 한다.
+# 아래 enablement: true 가 대신 켜 보려 하지만, 워크플로의 GITHUB_TOKEN 에는
+# Pages 생성 권한이 없어("Resource not accessible by integration") 사람이 한 번
+# 켜 줘야 한다. 켠 뒤로는 무시되는 값이라 그대로 둔다.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - claude/new-fairytale-dog-family-w1nrav
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 겹치지 않게 하나씩. 진행 중인 배포를 취소하지는 않는다.
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4

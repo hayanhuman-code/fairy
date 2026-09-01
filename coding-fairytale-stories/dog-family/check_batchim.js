@@ -82,6 +82,21 @@ const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 const sb = html.match(/<button id="startBtn">([^<]*)<\/button>/);
 if (sb) check('index.html startBtn', sb[1]);
 
+/* 저장소 첫 화면(웹 주소로 들어오면 제일 먼저 보는 곳)의 아이용 글자 */
+const home = path.join(dir, '..', '..', 'index.html');
+if (fs.existsSync(home)) {
+  const h = fs.readFileSync(home, 'utf8');
+  const grab = (re, where) => { let m; while ((m = re.exec(h))) check(where, m[1].trim()); };
+  grab(/<h1>([^<]*)<\/h1>/g, '홈 h1');
+  grab(/class="name">([^<]*)</g, '홈 .name');
+  grab(/class="sub">([^<]*)</g, '홈 .sub');
+  grab(/class="go">([^<]*)</g, '홈 .go');
+  const t = h.match(/<title>([^<]*)<\/title>/);
+  if (t) check('홈 title', t[1]);
+} else {
+  console.warn('경고: 저장소 첫 화면(index.html)을 찾지 못함');
+}
+
 /* 결과 */
 if (problems.length) {
   console.log(`❌ 받침 발견 — ${problems.length}곳 (검사 ${checked}개 문자열)`);

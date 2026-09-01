@@ -141,13 +141,14 @@ const STORY = {
       /* 강아지 그림은 120px 기준이라(엔진의 wolf는 260px) y를 작게 주면 하늘에 뜬다.
          발이 땅에 닿아 보이는 자리는 대체로 y 46~62% 사이다. */
       actors: [
-        { art: "dogBori", x: "62%", y: "35%", scale: .8, mood: "happy", anim: "anim-bob",
+        { art: "dogBori", x: "55%", y: "35%", scale: .8, mood: "happy", anim: "anim-bob",
           tap: { action: "cheer", say: "보리예요! 그네가 하늘까지 올라가요!", sfx: "blip" } },
         { art: "dogDudu", x: "44%", y: "60%", scale: .65, mood: "happy",
           tap: { action: "shake", say: "두두예요! 언니, 나도 나도!", sfx: "blip" } }
       ],
-      /* 그네는 집(배경 왼쪽)과 겹치지 않게 오른쪽에 세우고 보리를 그 위에 앉힌다 */
-      props: [ { art: "swing", x: "60%", y: "24%", size: 180 } ],
+      /* 그네는 집(배경 왼쪽)과 겹치지 않게 오른쪽에 세우고 보리를 그 위에 앉힌다.
+         소품 크기는 px 고정이라 x를 더 오른쪽에 두면 폰 세로에서 화면 밖으로 잘린다. */
+      props: [ { art: "swing", x: "50%", y: "24%", size: 180 } ],
       narration: "보리와 두두가 나무 아래에서 그네 타요. 히히, 재미나요!",
       parentPrompt: "아이에게: 그네를 타면 기분이 어때요? 우리도 누구랑 같이 타 볼까요?",
       next: "rain" },
