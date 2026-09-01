@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>우리 딸 코딩 동화</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    background: #fdf6ef; overflow: hidden; touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+  }
+  #app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+  /* 실제 그림(PNG) 표시 규칙 */
+  .bg-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .actor img.art-img { display: block; pointer-events: none; }
+  #startArt img.art-img { width: 100%; height: auto; }
+  .paletteItem .cmd-img, .slot .cmd-img, #ghost .cmd-img {
+    width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;
+  }
+  .wallRow .cmd-img { width: 76px; height: auto; display: block; }
+
+  /* 무대 */
+  .stage { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .bg { position: absolute; inset: 0; z-index: 0; }
+  .bg svg { width: 100%; height: 100%; display: block; }
+  .actor { position: absolute; z-index: 2; transition: transform .25s ease; cursor: pointer; }
+  .actor.tappable:active { transform: scale(.92); }
+  @keyframes shake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg)} 75%{transform:rotate(5deg)} }
+  @keyframes bob   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  @keyframes pop   { 0%{transform:scale(.2);opacity:0} 70%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
+  .anim-shake { animation: shake .5s ease 2; }
+  .anim-bob   { animation: bob 1.4s ease-in-out infinite; }
+  .anim-pop   { animation: pop .45s ease both; }
+
+  /* 상단 바 */
+  #topbar { position: absolute; top: 0; left: 0; right: 0; z-index: 30; display: flex; gap: 10px; padding: 12px; pointer-events: none; }
+  #topbar .spacer { flex: 1; }
+  .iconbtn {
+    pointer-events: auto; width: 60px; height: 60px; border-radius: 50%;
+    border: none; background: rgba(255,255,255,.82); box-shadow: 0 3px 8px rgba(0,0,0,.12);
+    font-size: 30px; line-height: 1; cursor: pointer; display: grid; place-items: center; transition: transform .12s;
+  }
+  .iconbtn:active { transform: scale(.9); }
+  .iconbtn.off { opacity: .42; }
+
+  /* 내레이션 (하단 카드) */
+  #narrationBar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; align-items: flex-end; gap: 14px;
+    padding: 18px 22px calc(18px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(255,250,243,.98) 60%, rgba(255,250,243,.0));
+  }
+  #narrationText {
+    flex: 1; font-size: clamp(19px, 3.6vw, 27px); line-height: 1.5; color: #5b4636; font-weight: 700;
+    background: rgba(255,255,255,.92); border: 2px solid #f0d9c2; border-radius: 18px;
+    padding: 14px 18px; box-shadow: 0 3px 10px rgba(0,0,0,.08);
+  }
+  /* 내레이션 (상단 배너 — 미니게임용) */
+  #topNarration {
+    position: absolute; top: 84px; left: 50%; transform: translateX(-50%); z-index: 18;
+    width: min(90vw, 680px); display: none; text-align: center;
+    background: rgba(255,255,255,.94); border: 2px solid #f0d9c2; border-radius: 18px;
+    padding: 12px 20px; box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    font-size: clamp(17px, 3vw, 24px); font-weight: 700; color: #5b4636; line-height: 1.45;
+  }
+  #nextBtn {
+    pointer-events: auto; border: none; border-radius: 40px; background: #f6a96b; color: #fff; font-weight: 800;
+    font-size: clamp(20px, 3.6vw, 28px); padding: 16px 30px; box-shadow: 0 4px 0 #d98643; cursor: pointer; display: none;
+  }
+  #nextBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 #d98643; }
+
+  /* 선택 분기 */
+  #choices { position: absolute; inset: 0; z-index: 25; display: none; align-items: center; justify-content: center; gap: 5vw; flex-wrap: wrap; padding-bottom: 130px; }
+  .choiceBtn {
+    width: min(38vw, 320px); aspect-ratio: 1.15; border: 5px solid #fff; border-radius: 28px; background: #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,.15); cursor: pointer; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transition: transform .12s;
+  }
+  .choiceBtn:active { transform: scale(.95); }
+  .choiceBtn svg { width: 70%; height: 60%; }
+  .choiceBtn .label { font-size: clamp(18px,3vw,26px); font-weight: 800; color: #6b5240; }
+
+  /* 미니게임 공통 */
+  #puzzle { position: absolute; inset: 0; z-index: 15; display: none; flex-direction: column; }
+  .puzzleScene { position: relative; flex: 1; }
+  .wallArea { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; }
+  .wallRow { display: flex; }
+  .wolfSpot { position: absolute; right: 8%; bottom: 8%; z-index: 3; }
+  #puzzleTray {
+    position: relative; z-index: 16; background: rgba(255,255,255,.9); border-top: 4px solid #f0d9c2;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center;
+  }
+  .palette { display: flex; gap: 12px; }
+  .paletteItem { width: 78px; height: 64px; cursor: grab; touch-action: none; }
+  .paletteItem svg { width: 100%; height: 100%; pointer-events: none; }
+  .slots { display: flex; gap: 10px; align-items: center; }
+  .slot { width: 78px; height: 64px; border-radius: 12px; border: 4px dashed #d9b58f; background: rgba(255,245,235,.7); display: grid; place-items: center; position: relative; }
+  .slot.filled { border-style: solid; border-color: #cf9b66; background: #fff; }
+  .slot.hint { animation: hintGlow 1s ease-in-out infinite; }
+  @keyframes hintGlow { 0%,100%{box-shadow:0 0 0 rgba(246,169,107,0)} 50%{box-shadow:0 0 18px 4px rgba(246,169,107,.85)} }
+  .slot svg { width: 100%; height: 100%; pointer-events: none; }
+  .slot .removeHint { position:absolute; top:-8px; right:-8px; font-size:18px; opacity:0; }
+  .slot.filled .removeHint { opacity:.6; }
+  .runBtn { border: none; border-radius: 50%; width: 84px; height: 84px; background: #7ec97e; color: #fff; font-size: 40px; cursor: pointer; box-shadow: 0 5px 0 #5fa85f; display: grid; place-items: center; }
+  .runBtn:active { transform: translateY(4px); box-shadow: 0 1px 0 #5fa85f; }
+  .runBtn:disabled { opacity: .5; }
+  .loopHint { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,.85); border-radius: 20px; padding: 6px 16px; font-weight: 700; color: #8a6b4f; font-size: 18px; z-index: 17; }
+
+  /* 글자/숫자 타일 (자음·모음·단어·셈 게임) */
+  .targetRow { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; max-width: 92%; }
+  .oslot { width: 86px; height: 86px; border-radius: 16px; border: 4px dashed #d9b58f; background: rgba(255,245,235,.7); display: grid; place-items: center; font-size: 46px; font-weight: 800; color: #5b4636; }
+  .oslot.filled { border-style: solid; border-color: #cf9b66; background: #fff; }
+  .tile {
+    width: 92px; height: 92px; border-radius: 18px; background: #fff; border: 4px solid #f0d9c2;
+    display: grid; place-items: center; font-size: 48px; font-weight: 800; color: #5b4636;
+    cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,.1); transition: transform .12s;
+  }
+  .tile:active { transform: scale(.9); }
+  .tile.used { opacity: .3; pointer-events: none; }
+  .tile.hint { animation: hintGlow 1s ease-in-out infinite; }
+  @keyframes wrongShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+  .tile.wrong { animation: wrongShake .35s ease; }
+  /* 셈 게임 */
+  .mathRow { position: absolute; top: 46%; left: 50%; transform: translate(-50%,-50%); display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; font-size: clamp(40px,8vw,64px); font-weight: 800; color: #7a5a40; }
+  .mathGrp { display: flex; gap: 6px; flex-wrap: wrap; max-width: 30vw; justify-content: center; }
+  .mathGrp svg { width: clamp(34px,6vw,52px); height: clamp(34px,6vw,52px); }
+
+  /* 부모 패널 */
+  #parentPanel { position: absolute; top: 84px; right: 12px; z-index: 28; max-width: min(72vw, 380px);
+    background: #fff7ee; border: 2px solid #f0d9c2; border-radius: 16px; padding: 14px 16px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.12); display: none; font-size: 17px; color: #6b5240; line-height: 1.4; }
+  #parentPanel b { color: #c9763d; }
+  .voicePick { font-size: 15px; color: #6b5240; }
+  .voicePick select { font-size: 15px; padding: 6px 8px; margin-top: 6px; max-width: 100%; border-radius: 8px; border: 1px solid #d9b58f; background: #fff; color: #5b4636; }
+  .autoRow { margin-top: 10px; font-size: 15px; }
+
+  /* 드래그 고스트 */
+  #ghost { position: fixed; z-index: 999; width: 78px; height: 64px; pointer-events: none; display: none; transform: translate(-50%,-50%); }
+  #ghost svg { width: 100%; height: 100%; }
+
+  /* 시작 화면 */
+  #startScreen { position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+    background: radial-gradient(circle at 50% 35%, #fff3e0, #f7d9b9); text-align: center; padding: 24px; }
+  #startScreen h1 { font-size: clamp(26px,5vw,44px); color: #7a5a40; margin: 0; }
+  #startScreen p  { font-size: clamp(16px,2.6vw,20px); color: #9a7a5e; margin: 0; }
+  #startBtn { border: none; border-radius: 60px; background: #f6a96b; color: #fff; font-size: clamp(28px,5vw,44px); font-weight: 900; padding: 26px 64px; box-shadow: 0 8px 0 #d98643; cursor: pointer; display: flex; align-items: center; gap: 14px; }
+  #startBtn:active { transform: translateY(5px); box-shadow: 0 3px 0 #d98643; }
+  #startArt { width: min(60vw, 360px); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="stage"><div class="bg" id="bg"></div></div>
+  <div id="choices"></div>
+  <div id="puzzle"><div class="puzzleScene" id="puzzleScene"></div><div id="puzzleTray"></div></div>
+
+  <div id="topbar">
+    <button class="iconbtn" id="bgmBtn" title="음악 켜기/끄기">🎵</button>
+    <button class="iconbtn" id="replayBtn" title="다시 듣기">🔊</button>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="parentBtn" title="같이 보기(부모용)">👪</button>
+  </div>
+  <div id="parentPanel"></div>
+  <div id="topNarration"></div>
+
+  <div id="narrationBar">
+    <div id="narrationText"></div>
+    <button id="nextBtn">다음 ▶</button>
+  </div>
+
+  <div id="ghost"></div>
+
+  <div id="startScreen">
+    <h1 id="startTitle">우리 딸 코딩 동화</h1>
+    <div id="startArt"></div>
+    <p id="startSub"></p>
+    <button id="startBtn">▶ 시작</button>
+    <p style="font-size:14px;opacity:.7">소리가 나와요. 부모님과 함께 보면 더 좋아요 💛</p>
+  </div>
+</div>
+
+<!-- 콘텐츠(이야기 데이터) → 엔진 순으로 로드 -->
+<script src="story.js"></script>
+<script src="engine.js"></script>
+</body>
+</html>
