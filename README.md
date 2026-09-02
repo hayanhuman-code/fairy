@@ -6,7 +6,7 @@
 
 | 이야기 | 폴더 | 내용 |
 |---|---|---|
-| 보리와 두두 | `coding-fairytale-stories/dog-family/` | 강아지 가족 4마리의 비 오는 날 상상 항해. 장면 12 · 미니게임 3 · 엔딩 3 |
+| 보리와 두두 | `coding-fairytale-stories/dog-family/` | 받침 없는 글자 그림책. 페이지 42 · 글자 쓰기 1 |
 
 각 이야기 폴더의 `SPEC.md`에 사양과 빌드 로그가 있다.
 
@@ -41,17 +41,22 @@ python3 -m http.server 8000   # 그 뒤 http://localhost:8000 접속
 
 ## 새 이야기를 만들 때
 
-폴더 하나에 `index.html` · `engine.js` · `story.js` · `audio/` 가 한 벌이다.
-**엔진(`engine.js`)은 건드리지 않고 `story.js` 만 새로 쓴다.**
+이 책은 **엔진을 쓰지 않는다.** 예전에 쓰던 `engine.js` 에서 **그림만** 떼어
+`art.js` 로 두고, 보여 주는 방식은 직접 짰다. 엔진을 그대로 쓰면 자막 크기·자동 넘김
+같은 것이 엔진에 박혀 있어 바꿀 수 없기 때문이다.
 
-- `story.js` — 장면·대사·캐릭터 배치. 이 이야기 전용 그림은 `window.EXTRA_ART` 에 담는다
-  (story.js 가 engine.js 보다 먼저 로드되어 `ART` 에 직접 못 넣기 때문).
-- `write-game.js` — 손가락으로 글자를 쓰는 미니게임(`game:"write"`).
-  획순 데이터는 `hangul-data.js`(별도 저장소 `hangulssugi` 에서 가져옴)를 쓴다.
-- `check_batchim.js` — 화면에 보이는 글자에 받침이 있는지 검사한다.
+- `art.js` — 엔진에서 떼어 온 그림 45종. (⚠️ `engine.js` 와 전역이 겹치니 같이 올리지 말 것)
+- `story-art.js` — 이 이야기 전용 그림 (강아지 4마리·소품·배경)
+- `pages.js` — 페이지 42개. 그림 배치 · 한 줄 글월 · 부모용 질문
+- `book.js` — 페이지 렌더러. 글자 하나를 버튼으로 만들고, 읽어 줄 때 차례로 켠다
+- `write-page.js` — 글자 쓰기. 혼자 도는 부품이라 `renderWritePage(그릇, 옵션)` 으로 부른다
+- `hangul-data.js` — 획순 데이터 (별도 저장소 `hangulssugi` 에서 가져옴)
+- `check_batchim.js` — 받침 · 핵심 글자 반복 · 줄 길이를 함께 검사한다
 
 ```bash
 cd coding-fairytale-stories/dog-family && node check_batchim.js
 ```
 
-받침 없이 글을 쓸 때 걸리는 것들은 `SPEC.md` 의 "다음에 참고할 점"에 정리해 두었다.
+검사는 세 가지를 본다 — ①화면 글자에 받침이 없는가 ②핵심 글자 20자가 3번 이상
+나오는가 ③한 줄이 8자를 넘지 않는가. 받침 없이 글을 쓸 때 걸리는 것들과
+설계 원칙은 `SPEC.md` 에 정리해 두었다.

@@ -8,187 +8,160 @@
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
-    margin: 0; padding: 0; height: 100%;
+    margin: 0; height: 100%; overflow: hidden;
     font-family: "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-    background: #fdf6ef; overflow: hidden; touch-action: manipulation;
-    user-select: none; -webkit-user-select: none;
+    background: #fdf6ef; color: #5b4636;
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
   }
-  #app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  #app { position: relative; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
 
-  /* 실제 그림(PNG) 표시 규칙 */
-  .bg-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .actor img.art-img { display: block; pointer-events: none; }
-  #startArt img.art-img { width: 100%; height: auto; }
-  .paletteItem .cmd-img, .slot .cmd-img, #ghost .cmd-img {
-    width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;
+  /* ── 책 ───────────────────────────────────────────── */
+  .book { height: 100%; display: flex; flex-direction: column; padding: 12px 14px 8px; gap: 10px; }
+
+  /* 그림: 위쪽. 글자의 배경이지 주인공이 아니다 */
+  .pic {
+    flex: 1 1 auto; min-height: 0; position: relative; overflow: hidden;
+    border-radius: 26px; border: 4px solid #f0d9c2; background: #fff;
+    box-shadow: 0 5px 0 rgba(90,74,56,.10);
   }
-  .wallRow .cmd-img { width: 76px; height: auto; display: block; }
+  .pic .bg { position: absolute; inset: 0; }
+  .pic .bg svg { width: 100%; height: 100%; display: block; }
+  /* #stage 는 그림칸을 꽉 채워야 한다. pageIn 애니메이션이 transform 을 걸면
+     #stage 가 위치 기준(containing block)이 되는데, 높이가 0이면 top:56% 가
+     전부 0으로 계산되어 등장인물이 그림 맨 위에 붙어 버린다. */
+  #stage { position: absolute; inset: 0; }
+  .actor, .prop { position: absolute; }
+  .actor { z-index: 2; } .prop { z-index: 1; }
+  .actor svg, .prop svg { display: block; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+  .bob { animation: bob 1.7s ease-in-out infinite; }
+  @keyframes pageIn { from { opacity:0; transform: translateY(8px) } to { opacity:1; transform:none } }
+  .pageIn { animation: pageIn .3s ease both; }
 
-  /* 무대 */
-  .stage { position: absolute; inset: 0; display: flex; flex-direction: column; }
-  .bg { position: absolute; inset: 0; z-index: 0; }
-  .bg svg { width: 100%; height: 100%; display: block; }
-  .actor { position: absolute; z-index: 2; transition: transform .25s ease; cursor: pointer; }
-  .actor.tappable:active { transform: scale(.92); }
-  @keyframes shake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg)} 75%{transform:rotate(5deg)} }
-  @keyframes bob   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-  @keyframes pop   { 0%{transform:scale(.2);opacity:0} 70%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
-  .anim-shake { animation: shake .5s ease 2; }
-  .anim-bob   { animation: bob 1.4s ease-in-out infinite; }
-  .anim-pop   { animation: pop .45s ease both; }
-
-  /* 상단 바 */
-  #topbar { position: absolute; top: 0; left: 0; right: 0; z-index: 30; display: flex; gap: 10px; padding: 12px; pointer-events: none; }
-  #topbar .spacer { flex: 1; }
-  .iconbtn {
-    pointer-events: auto; width: 60px; height: 60px; border-radius: 50%;
-    border: none; background: rgba(255,255,255,.82); box-shadow: 0 3px 8px rgba(0,0,0,.12);
-    font-size: 30px; line-height: 1; cursor: pointer; display: grid; place-items: center; transition: transform .12s;
+  /* 글: 크게, 한 줄. 글자 하나가 곧 버튼 */
+  .line {
+    flex: 0 0 auto; display: flex; justify-content: center; align-items: flex-end;
+    gap: clamp(2px, .8vw, 8px); flex-wrap: wrap; min-height: 1.2em;
   }
-  .iconbtn:active { transform: scale(.9); }
-  .iconbtn.off { opacity: .42; }
-
-  /* 내레이션 (하단 카드) */
-  #narrationBar {
-    position: absolute; left: 0; right: 0; bottom: 0; z-index: 20;
-    display: flex; align-items: flex-end; gap: 14px;
-    padding: 18px 22px calc(18px + env(safe-area-inset-bottom));
-    background: linear-gradient(to top, rgba(255,250,243,.98) 60%, rgba(255,250,243,.0));
+  .syl {
+    font-family: inherit; font-size: clamp(34px, 7.4vw, 76px); font-weight: 800; line-height: 1.08;
+    color: #5b4636; background: none; border: none; padding: 4px 8px 8px;
+    border-radius: 16px; cursor: pointer; min-width: 1.05em; text-align: center;
+    transition: transform .16s, color .16s, background .16s;
   }
-  #narrationText {
-    flex: 1; font-size: clamp(19px, 3.6vw, 27px); line-height: 1.5; color: #5b4636; font-weight: 700;
-    background: rgba(255,255,255,.92); border: 2px solid #f0d9c2; border-radius: 18px;
-    padding: 14px 18px; box-shadow: 0 3px 10px rgba(0,0,0,.08);
-  }
-  /* 내레이션 (상단 배너 — 미니게임용) */
-  #topNarration {
-    position: absolute; top: 84px; left: 50%; transform: translateX(-50%); z-index: 18;
-    width: min(90vw, 680px); display: none; text-align: center;
-    background: rgba(255,255,255,.94); border: 2px solid #f0d9c2; border-radius: 18px;
-    padding: 12px 20px; box-shadow: 0 4px 12px rgba(0,0,0,.1);
-    font-size: clamp(17px, 3vw, 24px); font-weight: 700; color: #5b4636; line-height: 1.45;
-  }
-  #nextBtn {
-    pointer-events: auto; border: none; border-radius: 40px; background: #f6a96b; color: #fff; font-weight: 800;
-    font-size: clamp(20px, 3.6vw, 28px); padding: 16px 30px; box-shadow: 0 4px 0 #d98643; cursor: pointer; display: none;
-  }
-  #nextBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 #d98643; }
+  .syl.gap { min-width: .42em; pointer-events: none; }
+  .syl:active { transform: scale(.92); }
+  .syl.now { color: #d1741f; background: #ffeedd; transform: translateY(-9px) scale(1.06); }
+  .syl.tapped { color: #3f8f5e; background: #e7f5eb; }
+  .syl:focus-visible { outline: 4px solid #a9c7ff; outline-offset: 2px; }
 
-  /* 선택 분기 */
-  #choices { position: absolute; inset: 0; z-index: 25; display: none; align-items: center; justify-content: center; gap: 5vw; flex-wrap: wrap; padding-bottom: 130px; }
-  .choiceBtn {
-    width: min(38vw, 320px); aspect-ratio: 1.15; border: 5px solid #fff; border-radius: 28px; background: #fff;
-    box-shadow: 0 8px 20px rgba(0,0,0,.15); cursor: pointer; overflow: hidden;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transition: transform .12s;
+  /* 손잡이: 크고 셋뿐 */
+  .bar { flex: 0 0 auto; position: relative; display: flex; align-items: center;
+         justify-content: center; gap: 16px; padding-bottom: 16px; }
+  .btn { border: none; border-radius: 999px; cursor: pointer; font-weight: 900;
+         font-family: inherit; color: #fff; display: flex; align-items: center; justify-content: center;
+         gap: 8px; transition: transform .1s, box-shadow .1s; }
+  .btn:active { transform: translateY(4px); }
+  .btn:disabled { opacity: .45; }
+  .round { width: 74px; height: 74px; font-size: 32px; }
+  .listen { background: #7fb2d9; box-shadow: 0 5px 0 #5f92ba; }
+  .listen:active { box-shadow: 0 1px 0 #5f92ba; }
+  .back { background: #cbb9a4; box-shadow: 0 5px 0 #a99781; width: 62px; height: 62px; font-size: 26px; }
+  .back:active { box-shadow: 0 1px 0 #a99781; }
+  .next { background: #f6a96b; box-shadow: 0 5px 0 #d98643;
+          font-size: clamp(22px, 3.6vw, 32px); padding: 16px 36px; }
+  .next:active { box-shadow: 0 1px 0 #d98643; }
+  .dots { position: absolute; left: 50%; transform: translateX(-50%); bottom: 0;
+          display: flex; gap: 5px; max-width: 78vw; flex-wrap: wrap; justify-content: center; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #e6d3bd; }
+  .dot.on { background: #f6a96b; }
+
+  /* 위쪽 작은 단추 */
+  .top { position: absolute; top: 10px; right: 12px; z-index: 30; display: flex; gap: 8px; }
+  .icon { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+          background: rgba(255,255,255,.86); box-shadow: 0 2px 6px rgba(0,0,0,.12);
+          font-size: 22px; display: grid; place-items: center; }
+  .icon.off { opacity: .42; }
+  #parent { position: absolute; top: 64px; right: 12px; z-index: 29; display: none;
+            max-width: min(74vw, 360px); background: #fff7ee; border: 2px solid #f0d9c2;
+            border-radius: 16px; padding: 13px 15px; box-shadow: 0 6px 16px rgba(0,0,0,.12);
+            font-size: 16px; line-height: 1.5; color: #6b5240; }
+  #parent b { color: #c9763d; }
+
+  /* 쓰기 페이지 */
+  #writeBox { position: absolute; inset: 0; z-index: 3; display: none; }
+
+  /* 첫 화면 */
+  #start { position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column;
+           align-items: center; justify-content: center; gap: 20px; text-align: center; padding: 24px;
+           background: radial-gradient(circle at 50% 36%, #fff3e0, #f7d9b9); }
+  #start h1 { margin: 0; font-size: clamp(30px, 6vw, 52px); color: #7a5a40; }
+  #start .sub { font-size: clamp(16px, 2.6vw, 21px); color: #9a7a5e; }
+  #startArt { width: min(46vw, 240px); }
+  #startArt svg { width: 100%; height: auto; }
+  #go { background: #f6a96b; box-shadow: 0 7px 0 #d98643; font-size: clamp(26px, 5vw, 40px);
+        padding: 22px 54px; }
+  #go:active { box-shadow: 0 2px 0 #d98643; }
+  .hint { font-size: 14px; color: #a98d70; }
+
+  /* 좁은 화면(폰 세로): 글자·여백을 좁혀 여덟 자가 한 줄에 들어가게 한다.
+     접히면 읽는 흐름이 흐트러진다. 그림칸 높이는 건드리지 않는다 —
+     안이 전부 절대배치라 flex 를 손대면 칸이 찌그러진다. */
+  @media (max-width: 620px) {
+    .syl { font-size: clamp(36px, 9.4vw, 60px); padding: 3px 2px 6px; min-width: .96em; }
+    .line { gap: 1px; }
+    .round { width: 62px; height: 62px; font-size: 26px; }
+    .back { width: 52px; height: 52px; font-size: 22px; }
+    .next { padding: 14px 26px; }
+    .bar { gap: 12px; padding-bottom: 20px; }
+    .dot { width: 5px; height: 5px; }
+    .dots { gap: 3px; }
   }
-  .choiceBtn:active { transform: scale(.95); }
-  .choiceBtn svg { width: 70%; height: 60%; }
-  .choiceBtn .label { font-size: clamp(18px,3vw,26px); font-weight: 800; color: #6b5240; }
 
-  /* 미니게임 공통 */
-  #puzzle { position: absolute; inset: 0; z-index: 15; display: none; flex-direction: column; }
-  .puzzleScene { position: relative; flex: 1; }
-  .wallArea { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; }
-  .wallRow { display: flex; }
-  .wolfSpot { position: absolute; right: 8%; bottom: 8%; z-index: 3; }
-  #puzzleTray {
-    position: relative; z-index: 16; background: rgba(255,255,255,.9); border-top: 4px solid #f0d9c2;
-    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center;
+  @media (prefers-reduced-motion: reduce) {
+    .bob, .pageIn { animation: none !important; }
   }
-  .palette { display: flex; gap: 12px; }
-  .paletteItem { width: 78px; height: 64px; cursor: grab; touch-action: none; }
-  .paletteItem svg { width: 100%; height: 100%; pointer-events: none; }
-  .slots { display: flex; gap: 10px; align-items: center; }
-  .slot { width: 78px; height: 64px; border-radius: 12px; border: 4px dashed #d9b58f; background: rgba(255,245,235,.7); display: grid; place-items: center; position: relative; }
-  .slot.filled { border-style: solid; border-color: #cf9b66; background: #fff; }
-  .slot.hint { animation: hintGlow 1s ease-in-out infinite; }
-  @keyframes hintGlow { 0%,100%{box-shadow:0 0 0 rgba(246,169,107,0)} 50%{box-shadow:0 0 18px 4px rgba(246,169,107,.85)} }
-  .slot svg { width: 100%; height: 100%; pointer-events: none; }
-  .slot .removeHint { position:absolute; top:-8px; right:-8px; font-size:18px; opacity:0; }
-  .slot.filled .removeHint { opacity:.6; }
-  .runBtn { border: none; border-radius: 50%; width: 84px; height: 84px; background: #7ec97e; color: #fff; font-size: 40px; cursor: pointer; box-shadow: 0 5px 0 #5fa85f; display: grid; place-items: center; }
-  .runBtn:active { transform: translateY(4px); box-shadow: 0 1px 0 #5fa85f; }
-  .runBtn:disabled { opacity: .5; }
-  .loopHint { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,.85); border-radius: 20px; padding: 6px 16px; font-weight: 700; color: #8a6b4f; font-size: 18px; z-index: 17; }
-
-  /* 글자/숫자 타일 (자음·모음·단어·셈 게임) */
-  .targetRow { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; max-width: 92%; }
-  .oslot { width: 86px; height: 86px; border-radius: 16px; border: 4px dashed #d9b58f; background: rgba(255,245,235,.7); display: grid; place-items: center; font-size: 46px; font-weight: 800; color: #5b4636; }
-  .oslot.filled { border-style: solid; border-color: #cf9b66; background: #fff; }
-  .tile {
-    width: 92px; height: 92px; border-radius: 18px; background: #fff; border: 4px solid #f0d9c2;
-    display: grid; place-items: center; font-size: 48px; font-weight: 800; color: #5b4636;
-    cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,.1); transition: transform .12s;
-  }
-  .tile:active { transform: scale(.9); }
-  .tile.used { opacity: .3; pointer-events: none; }
-  .tile.hint { animation: hintGlow 1s ease-in-out infinite; }
-  @keyframes wrongShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
-  .tile.wrong { animation: wrongShake .35s ease; }
-  /* 셈 게임 */
-  .mathRow { position: absolute; top: 46%; left: 50%; transform: translate(-50%,-50%); display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; font-size: clamp(40px,8vw,64px); font-weight: 800; color: #7a5a40; }
-  .mathGrp { display: flex; gap: 6px; flex-wrap: wrap; max-width: 30vw; justify-content: center; }
-  .mathGrp svg { width: clamp(34px,6vw,52px); height: clamp(34px,6vw,52px); }
-
-  /* 부모 패널 */
-  #parentPanel { position: absolute; top: 84px; right: 12px; z-index: 28; max-width: min(72vw, 380px);
-    background: #fff7ee; border: 2px solid #f0d9c2; border-radius: 16px; padding: 14px 16px;
-    box-shadow: 0 6px 16px rgba(0,0,0,.12); display: none; font-size: 17px; color: #6b5240; line-height: 1.4; }
-  #parentPanel b { color: #c9763d; }
-  .voicePick { font-size: 15px; color: #6b5240; }
-  .voicePick select { font-size: 15px; padding: 6px 8px; margin-top: 6px; max-width: 100%; border-radius: 8px; border: 1px solid #d9b58f; background: #fff; color: #5b4636; }
-  .autoRow { margin-top: 10px; font-size: 15px; }
-
-  /* 드래그 고스트 */
-  #ghost { position: fixed; z-index: 999; width: 78px; height: 64px; pointer-events: none; display: none; transform: translate(-50%,-50%); }
-  #ghost svg { width: 100%; height: 100%; }
-
-  /* 시작 화면 */
-  #startScreen { position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
-    background: radial-gradient(circle at 50% 35%, #fff3e0, #f7d9b9); text-align: center; padding: 24px; }
-  #startScreen h1 { font-size: clamp(26px,5vw,44px); color: #7a5a40; margin: 0; }
-  #startScreen p  { font-size: clamp(16px,2.6vw,20px); color: #9a7a5e; margin: 0; }
-  #startBtn { border: none; border-radius: 60px; background: #f6a96b; color: #fff; font-size: clamp(28px,5vw,44px); font-weight: 900; padding: 26px 64px; box-shadow: 0 8px 0 #d98643; cursor: pointer; display: flex; align-items: center; gap: 14px; }
-  #startBtn:active { transform: translateY(5px); box-shadow: 0 3px 0 #d98643; }
-  #startArt { width: min(60vw, 360px); }
 </style>
 </head>
 <body>
 <div id="app">
-  <div class="stage"><div class="bg" id="bg"></div></div>
-  <div id="choices"></div>
-  <div id="puzzle"><div class="puzzleScene" id="puzzleScene"></div><div id="puzzleTray"></div></div>
-
-  <div id="topbar">
-    <button class="iconbtn" id="bgmBtn" title="음악 켜기/끄기">🎵</button>
-    <button class="iconbtn" id="replayBtn" title="다시 듣기">🔊</button>
-    <div class="spacer"></div>
-    <button class="iconbtn" id="parentBtn" title="같이 보기(부모용)">👪</button>
-  </div>
-  <div id="parentPanel"></div>
-  <div id="topNarration"></div>
-
-  <div id="narrationBar">
-    <div id="narrationText"></div>
-    <button id="nextBtn">다음 ▶</button>
+  <div class="book">
+    <div class="pic">
+      <div class="bg" id="bg"></div>
+      <div id="stage"></div>
+      <div id="writeBox"></div>
+    </div>
+    <div class="line" id="line"></div>
+    <div class="bar">
+      <button class="btn back" id="back" aria-label="앞으로">◀</button>
+      <button class="btn round listen" id="listen" aria-label="읽어 줘">🔊</button>
+      <button class="btn next" id="next">가자 ▶</button>
+      <div class="dots" id="dots"></div>
+    </div>
   </div>
 
-  <div id="ghost"></div>
+  <div class="top">
+    <button class="icon" id="bgm" aria-label="음악">🎵</button>
+    <button class="icon" id="parentBtn" aria-label="부모님 보기">👪</button>
+  </div>
+  <div id="parent"></div>
 
-  <div id="startScreen">
-    <h1 id="startTitle">우리 딸 코딩 동화</h1>
+  <div id="start">
+    <h1>보리와 두두</h1>
     <div id="startArt"></div>
-    <p id="startSub"></p>
-    <button id="startBtn">▶ 가자</button>
-    <p style="font-size:14px;opacity:.7">소리가 나와요. 부모님과 함께 보면 더 좋아요 💛</p>
+    <div class="sub">우리 배 타고 가자</div>
+    <button class="btn" id="go">▶ 가자</button>
+    <p class="hint">글자를 하나씩 눌러 보세요. 소리가 나와요 💛</p>
   </div>
 </div>
 
-<!-- 콘텐츠(이야기 데이터) → 엔진 → 쓰기 미니게임(한글쓰기 획순 데이터 재사용) 순으로 로드 -->
-<script src="story.js"></script>
-<script src="engine.js"></script>
+<!-- 그림 → 이야기 그림 → 내용 → 글자 획순 → 쓰기 → 책 순으로 로드.
+     engine.js 는 쓰지 않는다. 그림(art.js)만 빌려 온다. -->
+<script src="art.js"></script>
+<script src="story-art.js"></script>
+<script src="pages.js"></script>
 <script src="hangul-data.js"></script>
-<script src="write-game.js"></script>
+<script src="write-page.js"></script>
+<script src="book.js"></script>
 </body>
 </html>
