@@ -20,10 +20,10 @@ window.addEventListener('resize', fit);
 
 // ── 그림 ─────────────────────────────────────────
 function drawItem([name, x, y, o = {}]) {
-  const s = o.s || 1, sx = o.flip ? -s : s;
+  const s = o.s || 1, sx = o.flip ? -s : s, rot = o.rot ? ` rotate(${o.rot})` : '';
   const inner = ART[name](o);
   const anim = o.anim ? ` class="a-${o.anim}"` : '';
-  return `<g transform="translate(${x} ${y}) scale(${sx} ${s})"><g${anim}>${inner}</g></g>`;
+  return `<g transform="translate(${x} ${y})${rot} scale(${sx} ${s})"><g${anim}>${inner}</g></g>`;
 }
 function drawScene(p) {
   const bg = BG[p.bg];
@@ -112,20 +112,23 @@ function show(i) {
   $('ask').textContent = p.ask || '';
   $('count').textContent = `${st.i + 1} / ${PAGES.length}`;
   $('prev').hidden = st.i === 0;
-  $('next').hidden = st.i === PAGES.length - 1 && !p.last;
+  const last = st.i === PAGES.length - 1;
+  $('next').textContent = last ? '↺' : '▶';                  // 마지막 쪽: 처음부터
+  $('next').setAttribute('aria-label', last ? '처음부터' : '다음');
   $('next').classList.toggle('pulse', !!p.cover);
+  $('game').innerHTML = '';
   st.locked = false; $('next').classList.remove('locked');
-  if (p.game && window.GAMES) {                // 놀이 페이지: 다 할 때까지 '다음' 잠김
+  if (p.game && typeof GAMES !== 'undefined') {                // 놀이 페이지: 다 할 때까지 '다음' 잠김
     st.locked = true; $('next').classList.add('locked');
     GAMES[p.game.type](p, () => { st.locked = false; $('next').classList.remove('locked'); $('next').classList.add('pulse'); });
   }
-  if (st.started) setTimeout(readLine, 350);   // 넘길 때 한 번 읽어 준다 (첫 화면은 손이 닿은 뒤부터)
+  if (st.started) setTimeout(readLine, 350);   // 놀이 쪽은 say 에 할 일을 적어 둔다   // 넘길 때 한 번 읽어 준다 (첫 화면은 손이 닿은 뒤부터)
 }
 
 $('next').addEventListener('click', () => {
   if (st.locked) return;
   st.started = true;
-  show(st.i + 1);
+  show(st.i === PAGES.length - 1 ? 0 : st.i + 1);
 });
 $('prev').addEventListener('click', () => { st.started = true; show(st.i - 1); });
 $('say').addEventListener('click', () => { st.started = true; readLine(); });

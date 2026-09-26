@@ -6,7 +6,7 @@
 
 | 이야기 | 폴더 | 상태 |
 |---|---|---|
-| 고래로봇과 배 | `coding-fairytale-stories/whale-robot/` | 사양서(SPEC.md) 확인 중 |
+| 고래로봇과 배 | `coding-fairytale-stories/whale-robot/` | 완성 · 40쪽 · 놀이 3개 (사다리 세기 · 구름 모으기 · '비' 쓰기) |
 
 각 이야기 폴더의 `SPEC.md`에 사양과 빌드 로그가 있다.
 
@@ -25,6 +25,18 @@ python3 -m http.server 8000   # 그 뒤 http://localhost:8000 접속
 
 **태블릿 가로 화면**이 가장 보기 좋다. 음성은 브라우저의 한국어 TTS를 쓰므로,
 한국어 음성이 없는 기기에서는 소리 없이 글자만 나온다.
+
+## 파일 구성 (고래로봇과 배)
+
+- `art.js` — SVG 그림 전부 + 배경 + 기준선(`LINE`)
+- `pages.js` — 페이지 40개. 배경 · 그림 배치 · 한 줄 글월 · 부모용 질문 · 놀이
+- `book.js` — 페이지 렌더러 · 글자 타일 · 읽어 주기 · 넘김
+- `games.js` — 놀이 3종 · 효과음 · 따라 쓰기 획 데이터
+- `check.js` — 줄 길이(8자) · 핵심 글자 3번 이상 · 부모용 질문 · 그림 이름 검사
+
+```bash
+cd coding-fairytale-stories/whale-robot && node check.js
+```
 
 ## 웹에 올리기 (GitHub Pages)
 

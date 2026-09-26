@@ -38,7 +38,7 @@ const DEFS = `
 
 const ART = {
   // ── 고래로봇 ─────────────────────────────── 폭 ~340 · 높이 ~160 · 오른쪽을 봄 · 발 없음
-  whale({ mood = 'happy' } = {}) {
+  whale({ mood = 'happy', tears = false, spout = false, zzz = false } = {}) {
     const sad = mood === 'sad', sleepy = mood === 'sleepy';
     const skin = sad ? 'url(#gWhaleSad)' : 'url(#gWhale)';
     const line = sad ? '#4f6f82' : '#3c86b5';
@@ -76,6 +76,15 @@ const ART = {
         <circle cx="92" cy="-12" r="6" fill="#d7e4ec" stroke="${line}" stroke-width="2.5"/>
       </g>
       ${eye}${mouth}${extra}
+      ${tears ? `<path d="M70 -64 Q63 -48 70 -41 Q77 -48 70 -64Z" fill="#7ec8ff" class="a-drip" style="animation-delay:.5s"/>
+                 <path d="M92 -66 Q86 -52 92 -46 Q98 -52 92 -66Z" fill="#7ec8ff" class="a-drip" style="animation-delay:1s"/>` : ''}
+      ${spout ? `<g class="a-spout">
+          <path d="M22 -186 Q10 -260 -40 -300 M29 -186 Q29 -270 29 -320 M36 -186 Q48 -260 98 -300"
+                stroke="#8fd3ff" stroke-width="12" fill="none" stroke-linecap="round" opacity=".85"/>
+          <circle cx="-44" cy="-306" r="9" fill="#bfe6ff"/><circle cx="29" cy="-330" r="10" fill="#bfe6ff"/><circle cx="102" cy="-306" r="9" fill="#bfe6ff"/>
+        </g>` : ''}
+      ${zzz ? `<g class="a-zzz" font-weight="900" fill="#6f8fb0">
+          <text x="120" y="-130" font-size="30">z</text><text x="146" y="-160" font-size="38">z</text><text x="178" y="-196" font-size="48">Z</text></g>` : ''}
       ${sad ? '' : '<ellipse cx="108" cy="-70" rx="9" ry="6" fill="#ff9aa8" opacity=".6"/>'}`;
   },
 
@@ -112,8 +121,9 @@ const ART = {
   },
 
   // ── 배 ──────────────────────────────────── 폭 ~320 · 갑판 y=-84 · pirate 를 주면 갑판 위에 세움
-  ship({ pirate = null } = {}) {
-    const crew = pirate ? `<g transform="translate(-60 -80) scale(.8)">${ART.pirate(pirate)}</g>` : '';
+  ship({ pirate = null, whale = null } = {}) {
+    const crew = (pirate ? `<g transform="translate(${whale ? -110 : -60} -80) scale(.8)">${ART.pirate(pirate)}</g>` : '')
+               + (whale ? `<g transform="translate(70 -84) scale(.52)">${ART.whale(whale)}</g>` : '');
     return `
       <line x1="30" y1="-84" x2="30" y2="-300" stroke="#6b3f25" stroke-width="8"/>
       <path d="M36 -290 Q120 -230 36 -130Z" fill="#fffaf0" stroke="#d8cbb2" stroke-width="3"/>
@@ -163,6 +173,42 @@ const ART = {
       <path d="M18 -170 Q50 -230 96 -216 Q52 -204 18 -170Z" fill="#4fc27a"/>
       <circle cx="10" cy="-164" r="8" fill="#8a5a2c"/><circle cx="26" cy="-162" r="8" fill="#8a5a2c"/>`;
   },
+  // 사다리 — 배 옆구리에 기대 놓는다. (0,0)이 아래 끝. hit 이면 칸마다 누를 수 있게 표시
+  ladder({ hit = false } = {}) {
+    const rungs = [0, 1, 2].map((i) => {
+      const y = -28 - i * 36, x = 6 + i * 8;
+      return `<g class="rung${hit ? ' hit' : ''}" data-i="${i}">
+        <rect x="${x - 14}" y="${y - 14}" width="72" height="28" fill="transparent"/>
+        <line x1="${x}" y1="${y}" x2="${x + 44}" y2="${y}" stroke="#c98a4b" stroke-width="9" stroke-linecap="round"/>
+        <text class="num" x="${x - 30}" y="${y + 10}" font-size="30" font-weight="900" fill="#e8663d" opacity="0">${i + 1}</text></g>`;
+    }).join('');
+    return `
+      <line x1="0" y1="0" x2="30" y2="-130" stroke="#a86b35" stroke-width="10" stroke-linecap="round"/>
+      <line x1="44" y1="0" x2="74" y2="-130" stroke="#a86b35" stroke-width="10" stroke-linecap="round"/>
+      ${rungs}`;
+  },
+  splash() {
+    return `<g class="a-splash" fill="#bfe6ff" stroke="#6fbbe6" stroke-width="3">
+      <path d="M-60 0 Q-70 -50 -40 -70 Q-46 -30 -30 0Z"/><path d="M-14 0 Q-10 -80 10 -96 Q10 -40 16 0Z"/>
+      <path d="M36 0 Q48 -56 72 -64 Q60 -24 62 0Z"/>
+      <circle cx="-60" cy="-86" r="8"/><circle cx="20" cy="-112" r="9"/><circle cx="80" cy="-80" r="7"/></g>`;
+  },
+  rain({ w = 260 } = {}) {
+    let d = '';
+    for (let i = 0; i < 14; i++) {
+      const x = -w / 2 + (i * 37) % w, y = (i * 53) % 150;
+      d += `<line x1="${x}" y1="${y}" x2="${x - 6}" y2="${y + 26}" style="animation-delay:${(i % 5) * .18}s"/>`;
+    }
+    return `<g class="rain" stroke="#6fbbe6" stroke-width="5" stroke-linecap="round">${d}</g>`;
+  },
+  rainbow() {
+    const cs = ['#ff8a8a', '#ffc36b', '#ffe46b', '#8fdc8f', '#7ec8ff', '#a99cf0'];
+    return cs.map((c, i) => `<path d="M${-260 + i * 14} 0 A${260 - i * 14} ${260 - i * 14} 0 0 1 ${260 - i * 14} 0"
+      stroke="${c}" stroke-width="14" fill="none" opacity=".75"/>`).join('');
+  },
+  star() {
+    return `<path class="a-twinkle" d="M0 -18 L5 -5 18 0 5 5 0 18 -5 5 -18 0 -5 -5Z" fill="#ffe066"/>`;
+  },
   heart() {
     return `<path d="M0 0 C-30 -20 -30 -46 -12 -46 Q-2 -46 0 -34 Q2 -46 12 -46 C30 -46 30 -20 0 0Z" fill="#ff7a8a"/>`;
   },
@@ -192,6 +238,56 @@ const BG = {
     front: `
       <path d="M330 700 L330 600 Q400 540 480 548 T640 540 T800 548 T960 540 T1120 548 T1280 540 V700Z" fill="#3aa3d8" opacity=".95"/>
       <path d="M340 586 Q420 568 500 578 T660 572 T820 580 T980 572 T1140 580 T1300 572" stroke="#e8f7ff" stroke-width="4" fill="none" opacity=".7"/>`,
+  },
+  graySea: {
+    back: `
+      <linearGradient id="gGray" gradientUnits="userSpaceOnUse" x1="0" y1="-500" x2="0" y2="330">
+        <stop offset="0" stop-color="#8fa3b3"/><stop offset="1" stop-color="#cfd9e0"/></linearGradient>
+      <rect x="-800" y="-900" width="2400" height="1500" fill="url(#gGray)"/>
+      <g transform="translate(220 110) scale(.8)">${ART.cloud({ tone: '#e3e9ee' })}</g>
+      <g transform="translate(560 80) scale(.6)">${ART.cloud({ tone: '#e3e9ee' })}</g>
+      <rect x="-800" y="${LINE.far}" width="2400" height="${700 - LINE.far}" fill="#6f95ab"/>`,
+    front: WAVES(LINE.sea - 6, '#5f879e', '#4f768c'),
+  },
+  cloudy: {
+    back: `
+      <rect x="-800" y="-900" width="2400" height="1500" fill="url(#gSky)"/>
+      <rect x="-800" y="${LINE.far}" width="2400" height="${700 - LINE.far}" fill="#58b3df"/>
+      <path d="M-800 ${LINE.far} H1600" stroke="#e8f7ff" stroke-width="3" opacity=".7"/>`,
+    front: WAVES(LINE.sea - 6, '#3aa3d8', '#2e8fc2'),
+  },
+  high: {
+    back: `
+      <rect x="-800" y="-900" width="2400" height="1500" fill="url(#gSky)"/>
+      <g transform="translate(660 70) scale(.7)">${ART.sun()}</g>
+      <rect x="-800" y="470" width="2400" height="230" fill="#58b3df"/>
+      <path d="M-800 470 H1600" stroke="#e8f7ff" stroke-width="3" opacity=".7"/>
+      <path d="M150 500 Q190 474 240 478 Q280 482 300 500Z" fill="#f6dd9c"/>
+      <path d="M200 482 l3 -22 M203 460 q-16 -4 -24 6 M203 460 q16 -6 24 4" stroke="#3fae6a" stroke-width="4" fill="none"/>
+      <g transform="translate(560 540) scale(.12)">${ART.ship({})}</g>
+      <g transform="translate(120 200) scale(.5)" opacity=".9">${ART.cloud()}</g>`,
+  },
+  cloudTop: {
+    back: `
+      <linearGradient id="gTop" gradientUnits="userSpaceOnUse" x1="0" y1="-500" x2="0" y2="420">
+        <stop offset="0" stop-color="#4fa6e8"/><stop offset="1" stop-color="#cbeaff"/></linearGradient>
+      <rect x="-800" y="-900" width="2400" height="1500" fill="url(#gTop)"/>
+      <g transform="translate(640 110) scale(.8)">${ART.sun()}</g>`,
+    front: `
+      <path d="M-800 700 V470 Q-700 420 -600 460 Q-520 400 -420 450 Q-330 400 -240 452 Q-150 410 -60 456 Q20 404 110 450
+               Q190 400 280 448 Q370 404 460 452 Q550 400 640 450 Q730 410 820 456 Q910 404 1000 452 Q1090 410 1180 456
+               Q1300 420 1600 460 V700Z" fill="#fff" stroke="#dce8f2" stroke-width="4"/>`,
+  },
+  sunset: {
+    back: `
+      <linearGradient id="gDusk" gradientUnits="userSpaceOnUse" x1="0" y1="-500" x2="0" y2="330">
+        <stop offset="0" stop-color="#8a8fe0"/><stop offset=".6" stop-color="#ffb3a0"/><stop offset="1" stop-color="#ffd9a0"/></linearGradient>
+      <rect x="-800" y="-900" width="2400" height="1500" fill="url(#gDusk)"/>
+      <circle cx="560" cy="${LINE.far}" r="60" fill="#ffcf66"/>
+      <g transform="translate(400 ${LINE.far + 10})">${ART.rainbow()}</g>
+      <rect x="-800" y="${LINE.far}" width="2400" height="${700 - LINE.far}" fill="#e89a8a"/>
+      <path d="M470 340 H650 M500 370 H620" stroke="#ffe0a0" stroke-width="6" opacity=".7"/>`,
+    front: WAVES(LINE.sea - 6, '#d98a8a', '#c47a86'),
   },
   sea: {
     back: `
