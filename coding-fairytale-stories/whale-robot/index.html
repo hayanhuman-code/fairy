@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>고래로봇과 배</title>
+<link rel="icon" href="favicon.svg" />
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    font-family: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    background: #fdf8ef; color: #3b4a58;
+    -webkit-user-select: none; user-select: none; touch-action: manipulation;
+  }
+  #book { height: 100dvh; height: 100vh; display: flex; flex-direction: column; }
+  @supports (height: 100dvh) { #book { height: 100dvh; } }
+
+  /* 그림칸 — 안은 전부 절대배치. flex 로 높이를 받으니 min-height:0 만 주고 flex 는 건드리지 않는다. */
+  .pic { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; background: #bfe8ff; }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #scene.enter { animation: fadeIn .45s ease; }   /* 투명도만 — transform 은 쓰지 않는다 */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  #ask {
+    position: absolute; left: 12px; top: 10px; max-width: min(62%, 460px);
+    padding: 6px 12px; border-radius: 14px; background: rgba(255,255,255,.78);
+    font-size: 14px; line-height: 1.45; color: #6a7b8a;
+  }
+  #ask::before { content: "💬 "; }
+  #count { position: absolute; right: 14px; top: 12px; font-size: 13px; color: #6a7b8a;
+           background: rgba(255,255,255,.7); padding: 3px 10px; border-radius: 10px; }
+
+  /* 넘김 버튼 — 그림칸 아래 두 구석, 늘 같은 자리 */
+  .nav {
+    position: absolute; bottom: 14px; width: 78px; height: 78px; border-radius: 50%;
+    border: 0; font-size: 34px; font-weight: 900; color: #fff; cursor: pointer;
+    background: #f6a96b; box-shadow: 0 5px 0 #d98643; display: grid; place-items: center;
+  }
+  .nav:active { box-shadow: 0 1px 0 #d98643; margin-bottom: -4px; }
+  #prev { left: 14px; background: #b9c6d2; box-shadow: 0 5px 0 #93a3b1; }
+  #next { right: 14px; }
+  .nav[hidden] { display: none; }
+  .nav.locked { background: #d6dde3; box-shadow: 0 5px 0 #b7c1ca; opacity: .6; }
+  #next.pulse { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { background: #ff8f4a; } }
+  #say {
+    position: absolute; right: 14px; top: 44px; width: 52px; height: 52px; border-radius: 50%;
+    border: 0; background: rgba(255,255,255,.85); font-size: 26px; cursor: pointer;
+  }
+
+  /* 글월 — 글자 하나 = 버튼 하나 */
+  .bar {
+    flex: 0 0 auto; display: flex; justify-content: center; align-items: center;
+    padding: 12px 10px 16px; background: #fffdf7; border-top: 4px solid #f0e2c8;
+    min-height: calc(var(--fs) * 1.5 + 28px);
+    --fs: clamp(34px, min(9.2vw, 10.5vh), 84px);
+  }
+  #line { display: flex; flex-wrap: nowrap; align-items: flex-end; white-space: nowrap; }
+  .ch {
+    font: inherit; font-size: var(--fs); font-weight: 900; line-height: 1.25;
+    color: #3b4a58; background: none; border: 0; padding: 0 .04em; margin: 0;
+    border-radius: .18em; cursor: pointer; transition: color .15s, background .15s;
+  }
+  .ch.on  { color: #e8663d; background: #fff0c9; }
+  .ch.tap { color: #fff; background: #5fb3e0; }
+  .gap  { display: inline-block; width: calc(var(--fs) * .32); }
+  .punc { font-size: calc(var(--fs) * .8); font-weight: 900; color: #9aa8b4; padding: 0 .02em; }
+  .cover .ch { color: #3c86b5; }
+
+  /* 좁은 화면 — 자간·여백만 줄인다 (그림칸 flex 는 그대로) */
+  @media (max-width: 480px) {
+    .bar { padding: 10px 4px 14px; --fs: clamp(30px, 10.4vw, 44px); }
+    .ch { padding: 0 .01em; }
+    .gap { width: calc(var(--fs) * .22); }
+    .nav { width: 62px; height: 62px; font-size: 28px; }
+    #ask { font-size: 13px; }
+  }
+
+  /* 그림 움직임 — SVG 안쪽 g 에만 건다 */
+  .a-bob   { animation: bob 3s ease-in-out infinite; }
+  .a-rock  { animation: rock 4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+  .a-glide { animation: glide 5s ease-in-out infinite; }
+  .a-sail  { animation: sail 6s ease-in-out infinite alternate; }
+  .a-flap  { animation: flap .5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+  .a-wave  { animation: fin 1.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 0% 0%; }
+  .a-hello { animation: hello .7s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 0% 100%; }
+  .a-drip  { animation: drip 1.6s ease-in infinite; }
+  @keyframes bob   { 50% { transform: translateY(-8px); } }
+  @keyframes rock  { 25% { transform: rotate(1.5deg); } 75% { transform: rotate(-1.5deg); } }
+  @keyframes glide { 50% { transform: translate(24px, -10px); } }
+  @keyframes sail  { to { transform: translateX(-60px); } }
+  @keyframes flap  { to { transform: scaleY(.55); } }
+  @keyframes fin   { to { transform: rotate(-14deg); } }
+  @keyframes hello { to { transform: rotate(-22deg); } }
+  @keyframes drip  { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
+  .a-fly    { animation: fly 2.6s ease-in-out infinite; }
+  .a-land   { animation: land 1.6s ease-out both; }
+  .a-spout  { animation: spout 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+  .a-zzz text { animation: zzz 2.4s ease-in-out infinite; }
+  .a-zzz text:nth-child(2) { animation-delay: .4s; } .a-zzz text:nth-child(3) { animation-delay: .8s; }
+  .a-splash { animation: splash 1.2s ease-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+  .a-twinkle { animation: twinkle 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .rain line { animation: rain .9s linear infinite; }
+  @keyframes fly    { 50% { transform: translateY(-18px); } }
+  @keyframes land   { from { transform: translateY(-120px); } to { transform: translateY(0); } }
+  @keyframes spout  { 50% { transform: scaleY(.85); } }
+  @keyframes zzz    { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+  @keyframes splash { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.1); opacity: .2; } }
+  @keyframes twinkle{ 50% { transform: scale(.6); opacity: .5; } }
+  @keyframes rain   { from { transform: translateY(-20px); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(60px); opacity: 0; } }
+
+  /* 놀이 */
+  #game { position: absolute; inset: 0; pointer-events: none; }
+  #game > * { pointer-events: auto; }
+  .hit { cursor: pointer; }
+  .rung.hit line { animation: hintRung 1.2s ease-in-out infinite; }
+  .rung.hit:nth-of-type(2) line { animation-delay: .3s; } .rung.hit:nth-of-type(3) line { animation-delay: .6s; }
+  .rung.done line { animation: none; stroke: #ffb13b; }
+  @keyframes hintRung { 50% { stroke: #ffd98a; } }
+  .cloudG { transition: transform .9s cubic-bezier(.3,1.3,.5,1); }
+  .cloudG.done { cursor: default; }
+  .choices { position: absolute; left: 50%; top: 64px; translate: -50% 0; display: flex; gap: 18px; }
+  .choice {
+    width: 92px; height: 92px; border-radius: 26px; border: 0; cursor: pointer;
+    font: inherit; font-size: 54px; font-weight: 900; color: #3b4a58;
+    background: #fff; box-shadow: 0 6px 0 #c9d6e0;
+  }
+  .choice.right { background: #8fdc8f; color: #fff; box-shadow: 0 6px 0 #5fb85f; }
+  .choice.hint  { animation: pulseC 1s ease-in-out infinite; }
+  .choice.shake { animation: shake .4s; }
+  @keyframes pulseC { 50% { background: #ffe08a; } }
+  @keyframes shake  { 25% { translate: -8px 0; } 75% { translate: 8px 0; } }
+  @media (max-width: 480px) {       /* 기본 규칙 뒤에 둬야 덮어쓴다 */
+    .choices { top: 96px; gap: 12px; }
+    .choice { width: 76px; height: 76px; font-size: 44px; }
+  }
+  .writer {
+    position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+    width: min(62vmin, 360px); aspect-ratio: 1; padding: 10px;
+    background: rgba(255,255,255,.94); border-radius: 30px; box-shadow: 0 10px 30px rgba(40,70,100,.25);
+    transition: opacity .6s;
+  }
+  .writer.away { opacity: 0; pointer-events: none; }
+  .writer svg { width: 100%; height: 100%; touch-action: none; display: block; }
+  .writer line { stroke-width: 20; stroke-linecap: round; }
+  .writer .guide line { stroke: #e6edf2; }
+  .writer .cur { stroke: #ffd9b0; stroke-dasharray: 2 26; stroke-width: 10; }
+  .writer .cur.glow { stroke: #ffb13b; stroke-dasharray: none; stroke-width: 20; animation: pulseC 1s infinite; opacity: .7; }
+  .writer .ok { stroke: #5fb3e0; }
+  .writer .finished .ok { stroke: #e8663d; }
+  .writer .startDot { fill: #5fcf7a; }
+  .writer .stepNum { font-size: 20px; font-weight: 900; fill: #5fcf7a; }
+  .writer .pen { fill: none; stroke: #3c86b5; stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+  <div id="book">
+    <div class="pic">
+      <svg id="scene" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+      <div id="ask"></div>
+      <div id="count"></div>
+      <div id="game"></div>
+      <button id="say" aria-label="다시 읽어 주기">🔊</button>
+      <button id="prev" class="nav" aria-label="앞으로">◀</button>
+      <button id="next" class="nav" aria-label="다음">▶</button>
+    </div>
+    <div class="bar"><div id="line"></div></div>
+  </div>
+
+  <script src="art.js"></script>
+  <script src="pages.js"></script>
+  <script src="games.js"></script>
+  <script src="book.js"></script>
+</body>
+</html>
